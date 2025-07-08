@@ -93,7 +93,8 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
         # render
         bg = torch.rand((3), device="cuda") if opt.random_background else background
         render_pkg = render(viewpoint_cam, gaussians, pipe, bg, visible_mask=pc_visible_mask)
-        image, viewspace_point_tensor, visibility_filter, radii, scaling = render_pkg["render"], render_pkg["viewspace_points"], render_pkg["visibility_filter"], render_pkg["radii"], render_pkg["scaling"]
+        image, viewspace_point_tensor, visibility_filter = render_pkg["render"], render_pkg["viewspace_points"], render_pkg["visibility_filter"]
+        radii, scaling = render_pkg["radii"], render_pkg["scaling"]
         vis_opc_mask = render_pkg["combined_mask"]
 
         # Loss
@@ -121,7 +122,8 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                 progress_bar.close()
 
             # Log and save
-            psnr_curr, report_iteration = training_report(tb_writer, iteration, Ll1, loss, l1_loss, iter_start.elapsed_time(iter_end), testing_iterations, scene, render, (pipe, background), logger=logger)
+            psnr_curr, report_iteration = training_report(
+                tb_writer, iteration, Ll1, loss, l1_loss, iter_start.elapsed_time(iter_end), testing_iterations, scene, render, (pipe, background), logger=logger)
             if (iteration in saving_iterations):
                 logger.info("[ITER {}] Saving Gaussians".format(iteration))
                 scene.save(iteration)
@@ -139,14 +141,8 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                 gaussians.add_densification_stats(viewspace_point_tensor, combined_mask, visibility_filter)
 
                 if iteration > opt.update_from and iteration % opt.update_interval == 0:
-                    # densify_voxel_based = False
-                    densify_voxel_based = True
-                    if densify_voxel_based:
-                        gaussians.densify_and_prune_voxel_based(
-                            opt.densify_grad_threshold, opt.min_opacity, opt.success_threshold, opt.update_interval, opt.grow, opt.prune)
-                    else:
-                        size_threshold = 20 if iteration > opt.opacity_reset_interval else None
-                        gaussians.densify_and_prune(opt.densify_grad_threshold, opt.min_opacity, scene.cameras_extent, size_threshold)
+                    gaussians.densify_and_prune_voxel_based(
+                        opt.densify_grad_threshold, opt.min_opacity, opt.success_threshold, opt.update_interval, opt.grow, opt.prune)
                     gaussians.create_knn_graph()
                     # logger.info(f'n points: {gaussians.get_xyz.shape[0]}')
 

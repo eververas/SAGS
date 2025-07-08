@@ -87,45 +87,6 @@ def midpoint_interpolate(sparse_pts, k = 4):
     mid_pts = (sparse_pts[mid_pts_pairs[:, 0]] + sparse_pts[mid_pts_pairs[:, 1]])/ 2.0 
     return mid_pts, mid_pts_pairs
 
-# class OffsetModel(nn.Module):
-
-#     def __init__(self, in_channels, n_offsets=1):
-#         super().__init__()
-        
-#         self.n_offsets = n_offsets
-#         pos_enc_dim = 32
-#         in_dim = in_channels + pos_enc_dim + 32
-
-#         self.affine_alpha = nn.Parameter(torch.ones([1, in_dim]))
-#         self.affine_beta  = nn.Parameter(torch.zeros([1, in_dim]))
-
-#         # tcnn layers -----------------------------------
-#         self.hash_grid = tcnn.Encoding(
-#             n_input_dims = 3,
-#             encoding_config = {
-#                 "otype": "HashGrid",
-#                 "n_levels": 16,
-#                 "n_features_per_level": 2,
-#                 "log2_hashmap_size": 15,
-#                 "base_resolution": 16,
-#                 "per_level_scale": 1.447,
-#             },
-#         )
-#         self.mlp_offsets = tcnn.Network(
-#             n_input_dims = in_dim,
-#             n_output_dims = 3 * n_offsets,
-#             network_config = {
-#                 "otype": "FullyFusedMLP",
-#                 "activation": "None",
-#                 "output_activation": "None",
-#                 "n_neurons": 64,
-#                 "n_hidden_layers": 1,
-#             },
-#         )
-
-#     def forward(self, xyz, xyz_feats):
-#         offsets = self.mlp_offsets(xyz_feats).view([-1, 3])
-#         return offsets
 
 class AffineLayer(nn.Module):
     def __init__(self, in_dim=32):
@@ -316,7 +277,6 @@ class GaussianModel:
         self.mlp_opacity.eval()
         self.mlp_cov.eval()
         self.mlp_color.eval()
-        # self.offset_model.eval()
         self.mlp_offsets.eval()
         self.hash_grid.eval()
         self.affine_layer.eval()
@@ -325,7 +285,6 @@ class GaussianModel:
         self.mlp_opacity.train()
         self.mlp_cov.train()
         self.mlp_color.train()
-        # self.offset_model.train()
         self.mlp_offsets.train()
         self.hash_grid.train()
         self.affine_layer.train()
@@ -532,7 +491,6 @@ class GaussianModel:
             {'params': self.mlp_opacity.parameters(), 'lr': training_args.mlp_opacity_lr_init, "name": "mlp_opacity"},
             {'params': self.mlp_color.parameters(), 'lr': training_args.mlp_color_lr_init, "name": "mlp_color"},
             {'params': self.mlp_cov.parameters(), 'lr': training_args.mlp_cov_lr_init, "name": "mlp_cov"},
-            # {'params': self.offset_model.parameters(), 'lr': training_args.offset_model_lr_init, "name": "offset_model"}
             {'params': self.mlp_offsets.parameters(), 'lr': training_args.mlp_offsets_lr_init, "name": "mlp_offsets"},
             {'params': self.hash_grid.parameters(), 'lr': training_args.hash_grid_lr_init, "name": "hash_grid"},
             {'params': self.affine_layer.parameters(), 'lr': training_args.affine_layer_lr_init, "name": "affine_layer"},
@@ -555,10 +513,6 @@ class GaussianModel:
                                                     lr_final=training_args.mlp_cov_lr_final,
                                                     lr_delay_mult=training_args.mlp_cov_lr_delay_mult,
                                                     max_steps=training_args.mlp_cov_lr_max_steps)
-        # self.offset_model_scheduler_args = get_expon_lr_func(lr_init=training_args.offset_model_lr_init,
-        #                                             lr_final=training_args.offset_model_lr_final,
-        #                                             lr_delay_mult=training_args.offset_model_lr_delay_mult,
-        #                                             max_steps=training_args.offset_model_lr_max_steps)
         self.mlp_offsets_scheduler_args  = get_expon_lr_func(lr_init=training_args.mlp_offsets_lr_init,
                                                     lr_final=training_args.mlp_offsets_lr_final,
                                                     lr_delay_mult=training_args.mlp_offsets_lr_delay_mult,
@@ -587,9 +541,6 @@ class GaussianModel:
             if param_group["name"] == "mlp_cov":
                 lr = self.mlp_cov_scheduler_args(iteration)
                 param_group['lr'] = lr
-            # if param_group["name"] == "offset_model":
-            #     lr = self.offset_model_scheduler_args(iteration)
-            #     param_group['lr'] = lr  
             if param_group["name"] == "mlp_offsets":
                 lr = self.mlp_offsets_scheduler_args(iteration)
                 param_group['lr'] = lr  
@@ -602,7 +553,6 @@ class GaussianModel:
 
     def construct_list_of_attributes(self):
         l = ['x', 'y', 'z', 'nx', 'ny', 'nz']
-        # All channels except the 3 DC
         for i in range(self._feats.shape[1]):
             l.append('feats_{}'.format(i))
         l.append('opacity')
@@ -629,11 +579,6 @@ class GaussianModel:
         elements[:] = list(map(tuple, attributes))
         el = PlyElement.describe(elements, 'vertex')
         PlyData([el]).write(path)
-
-    def reset_opacity(self):
-        opacities_new = inverse_sigmoid(torch.min(self.get_opacity, torch.ones_like(self.get_opacity)*0.01))
-        optimizable_tensors = self.replace_tensor_to_optimizer(opacities_new, "opacity")
-        self._opacity = optimizable_tensors["opacity"]
 
     def load_ply(self, path):
         plydata = PlyData.read(path)
@@ -789,64 +734,6 @@ class GaussianModel:
         self._neural_rotation = torch.cat([self._neural_rotation, new_neural_rotation], dim=0)
         self._neural_xyz = torch.cat([self._neural_xyz, new_neural_xyz], dim=0)
 
-    def densify_and_split(self, grads, grad_threshold, scene_extent, N=2):
-        n_init_points = self.get_xyz.shape[0]
-        # Extract points that satisfy the gradient condition
-        padded_grad = torch.zeros((n_init_points), device="cuda")
-        padded_grad[:grads.shape[0]] = grads.squeeze()
-        selected_pts_mask = torch.where(padded_grad >= grad_threshold, True, False)
-        selected_pts_mask = torch.logical_and(selected_pts_mask,
-                                              torch.max(self.get_neural_scaling, dim=1).values > self.percent_dense*scene_extent)
-
-        stds = self.get_neural_scaling[selected_pts_mask].repeat(N,1)
-        means = torch.zeros((stds.size(0), 3),device="cuda")
-        samples = torch.normal(mean=means, std=stds)
-        rots = build_rotation(self.get_neural_rotation[selected_pts_mask]).repeat(N,1,1)
-        new_xyz = torch.bmm(rots, samples.unsqueeze(-1)).squeeze(-1) + self.get_neural_xyz[selected_pts_mask].repeat(N, 1) #  + offsets
-        new_scaling = self.scaling_inverse_activation(self.get_scaling[selected_pts_mask].repeat(N,1) / (0.8*N))
-        new_rotation = self._rotation[selected_pts_mask].repeat(N,1)
-        new_feats = self._feats[selected_pts_mask].repeat(N,1)
-        new_opacity = self._opacity[selected_pts_mask].repeat(N,1)
-        
-        self.densification_postfix(new_xyz, new_feats, new_opacity, new_scaling, new_rotation)
-        self.densification_postfix_neural_attributes(selected_pts_mask, N)
-
-        prune_filter = torch.cat((selected_pts_mask, torch.zeros(N * selected_pts_mask.sum(), device="cuda", dtype=bool)))
-        self.prune_points(prune_filter)
-
-    def densify_and_clone(self, grads, grad_threshold, scene_extent):
-        # Extract points that satisfy the gradient condition
-        selected_pts_mask = torch.where(torch.norm(grads, dim=-1) >= grad_threshold, True, False)
-        selected_pts_mask = torch.logical_and(selected_pts_mask,
-                                              torch.max(self.get_neural_scaling, dim=1).values <= self.percent_dense*scene_extent)
-        
-        # new_xyz = self._xyz[selected_pts_mask] # + offsets
-        new_xyz = self.get_neural_xyz[selected_pts_mask]
-        new_feats = self._feats[selected_pts_mask]
-        new_opacities = self._opacity[selected_pts_mask]
-        new_scaling = self._scaling[selected_pts_mask]
-        new_rotation = self._rotation[selected_pts_mask]
-
-        self.densification_postfix(new_xyz, new_feats, new_opacities, new_scaling, new_rotation)
-        self.densification_postfix_neural_attributes(selected_pts_mask, 1)
-
-    def densify_and_prune(self, max_grad, min_opacity, extent, max_screen_size):
-        grads = self.xyz_gradient_accum / self.denom_grow
-        grads[grads.isnan()] = 0.0
-
-        self.densify_and_clone(grads, max_grad, extent)
-        self.densify_and_split(grads, max_grad, extent)
-
-        # prune_mask = (self.get_opacity < min_opacity).squeeze()
-        prune_mask = (self.get_neural_opacity < min_opacity).squeeze()
-        if max_screen_size:
-            big_points_vs = self.max_radii2D > max_screen_size
-            big_points_ws = self.get_neural_scaling.max(dim=1).values > 0.1 * extent
-            prune_mask = torch.logical_or(torch.logical_or(prune_mask, big_points_vs), big_points_ws)
-        self.prune_points(prune_mask)
-        torch.cuda.empty_cache()
-
-    # --- Voxel-Based densification -----------------------------------------------------
     def xyz_growing(self, grads, threshold, xyz_mask):
         ## 
         init_length = self.get_xyz.shape[0] * self.n_offsets
@@ -976,7 +863,6 @@ class GaussianModel:
             'mlp_opacity' : self.mlp_opacity.state_dict(),
             'mlp_color'   : self.mlp_color.state_dict(),
             'mlp_cov'     : self.mlp_cov.state_dict(),
-            # 'offset_model': self.offset_model.state_dict()
             'mlp_offsets' : self.mlp_offsets.state_dict(),
             'hash_grid'   : self.hash_grid.state_dict(),
             'affine_layer': self.affine_layer.state_dict(),
@@ -987,7 +873,6 @@ class GaussianModel:
         self.mlp_opacity.load_state_dict(checkpoint['mlp_opacity'])
         self.mlp_color.load_state_dict(checkpoint['mlp_color'])
         self.mlp_cov.load_state_dict(checkpoint['mlp_cov'])
-        # self.offset_model.load_state_dict(checkpoint['offset_model'])
         self.mlp_offsets.load_state_dict(checkpoint['mlp_offsets'])
         self.hash_grid.load_state_dict(checkpoint['hash_grid'])
         self.affine_layer.load_state_dict(checkpoint['affine_layer'])

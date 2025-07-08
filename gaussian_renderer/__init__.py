@@ -24,7 +24,7 @@ def generate_neural_gaussians(gaussians : GaussianModel, viewpoint_camera, visib
         visible_mask = torch.ones(gaussians.get_xyz.shape[0], dtype=torch.bool, device = gaussians.get_xyz.device)
 
     if torch.isnan(gaussians.get_feats).sum() > 0:
-        print('aaa')  
+        print('Found nan feats')  
 
     # init attributes
     xyz = gaussians.get_xyz[visible_mask]
