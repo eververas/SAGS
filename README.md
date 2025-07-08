@@ -132,3 +132,4 @@ Please follow the LICENSE of [3D-GS](https://github.com/graphdeco-inria/gaussian
 ## Acknowledgement
 
 We thank the authors of [3D-GS](https://github.com/graphdeco-inria/gaussian-splatting) and [Scaffold-GS](https://github.com/city-super/Scaffold-GS) for their excellent work.
+  
