@@ -1,0 +1,12 @@
+    iopath
+    plyfile
+    einops
+    wandb
+    lpips
+    laspy
+    torch_geometric
+    torch-scatter
+    git+https://github.com/facebookresearch/pytorch3d.git
+    git+https://github.com/NVlabs/tiny-cuda-nn/#subdirectory=bindings/torch
+    submodules/diff-gaussian-rasterization
+    submodules/simple-knn
