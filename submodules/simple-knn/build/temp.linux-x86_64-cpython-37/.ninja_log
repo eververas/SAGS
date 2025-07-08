@@ -1,0 +1,4 @@
+# ninja log v5
+2	7865	1707150577314790125	/storage/nfs2/rol/ROL-Scaffold-GS/submodules/simple-knn/build/temp.linux-x86_64-cpython-37/simple_knn.o	4f97aecdc5a0bb20
+1	18680	1707150588124460235	/storage/nfs2/rol/ROL-Scaffold-GS/submodules/simple-knn/build/temp.linux-x86_64-cpython-37/ext.o	7e0b7ae3fd59a698
+2	45471	1707150614921468348	/storage/nfs2/rol/ROL-Scaffold-GS/submodules/simple-knn/build/temp.linux-x86_64-cpython-37/spatial.o	bfda35fc73571505

@@ -1,0 +1,4 @@
+# ninja log v5
+32	9908	1751973171603500497	/home/evangelos/work/eververas/server_backup/git_code/SAGS/SAGS-on-3DGS/submodules/simple-knn/build/temp.linux-x86_64-cpython-39/ext.o	691a91c3e1587669
+37	14657	1751973176350836722	/home/evangelos/work/eververas/server_backup/git_code/SAGS/SAGS-on-3DGS/submodules/simple-knn/build/temp.linux-x86_64-cpython-39/simple_knn.o	cd326f8c1dab16dd
+38	28252	1751973189903441768	/home/evangelos/work/eververas/server_backup/git_code/SAGS/SAGS-on-3DGS/submodules/simple-knn/build/temp.linux-x86_64-cpython-39/spatial.o	8595c0481b36089
