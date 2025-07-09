@@ -22,12 +22,12 @@ function rand(){
 
 gpu=-1
 ulimit -n 4096
+exp_name=$message
 
 # tandt --------------------------
 if [ $1 == 'train' ]
 then
     scene='tandt_db/tandt/train'
-    exp_name="exp_${message}"
     voxel_size=0.01
     update_init_factor=16
     low_curv_ups_factor=10
@@ -39,7 +39,6 @@ then
 elif [ $1 == 'truck' ]
 then
     scene='tandt_db/tandt/truck'
-    exp_name="exp_${message}"
     voxel_size=0.01
     update_init_factor=16
     low_curv_ups_factor=10
@@ -52,7 +51,6 @@ then
 elif [ $1 == 'playroom' ]
 then
     scene='tandt_db/db/playroom'
-    exp_name="exp_${message}"
     voxel_size=0.005
     update_init_factor=16
     low_curv_ups_factor=10
@@ -64,7 +62,6 @@ then
 elif [ $1 == 'drjohnson' ]
 then
     scene='tandt_db/db/drjohnson'
-    exp_name="exp_${message}"
     voxel_size=0.005
     update_init_factor=16
     low_curv_ups_factor=10
@@ -77,7 +74,6 @@ then
 elif [ $1 == 'amsterdam' ]
 then
     scene='bungeenerf/amsterdam'
-    exp_name="exp_${message}"
     voxel_size=0
     update_init_factor=128
     lod=30
@@ -90,7 +86,6 @@ then
 elif [ $1 == 'bilbao' ]
 then
     scene='bungeenerf/bilbao'
-    exp_name="exp_${message}"
     voxel_size=0
     update_init_factor=128
     lod=30
@@ -104,7 +99,6 @@ then
 elif [ $1 == 'hollywood' ]
 then
     scene='bungeenerf/hollywood'
-    exp_name="exp_${message}"
     voxel_size=0
     update_init_factor=128
     lod=30
@@ -117,7 +111,6 @@ then
 elif [ $1 == 'pompidou' ]
 then
     scene='bungeenerf/pompidou'
-    exp_name="exp_${message}"
     voxel_size=0
     update_init_factor=128
     lod=30
@@ -130,7 +123,6 @@ then
 elif [ $1 == 'quebec' ]
 then
     scene='bungeenerf/quebec'
-    exp_name="exp_${message}"
     voxel_size=0
     update_init_factor=128
     lod=30
@@ -143,7 +135,6 @@ then
 elif [ $1 == 'rome' ]
 then
     scene='bungeenerf/rome'
-    exp_name="exp_${message}"
     voxel_size=0
     update_init_factor=128
     lod=30
@@ -157,7 +148,6 @@ then
 elif [ $1 == 'bicycle' ]
 then
     scene='mipnerf360/bicycle'
-    exp_name="exp_${message}"
     voxel_size=0.001
     update_init_factor=16
     low_curv_ups_factor=10
@@ -169,7 +159,6 @@ then
 elif [ $1 == 'garden' ]
 then
     scene='mipnerf360/garden'
-    exp_name="exp_${message}"
     voxel_size=0.001
     update_init_factor=16
     low_curv_ups_factor=10
@@ -181,7 +170,6 @@ then
 elif [ $1 == 'stump' ]
 then
     scene='mipnerf360/stump'
-    exp_name="exp_${message}"
     voxel_size=0.001
     update_init_factor=16
     low_curv_ups_factor=10
@@ -193,7 +181,6 @@ then
 elif [ $1 == 'room' ]
 then
     scene='mipnerf360/room'
-    exp_name="exp_${message}"
     voxel_size=0.001
     update_init_factor=16
     low_curv_ups_factor=10
@@ -205,7 +192,6 @@ then
 elif [ $1 == 'counter' ]
 then
     scene='mipnerf360/counter'
-    exp_name="exp_${message}"
     voxel_size=0.001
     update_init_factor=16
     low_curv_ups_factor=10
@@ -217,7 +203,6 @@ then
 elif [ $1 == 'kitchen' ]
 then
     scene='mipnerf360/kitchen'
-    exp_name="exp_${message}"
     voxel_size=0.001
     update_init_factor=16
     low_curv_ups_factor=10
@@ -229,7 +214,6 @@ then
 elif [ $1 == 'bonsai' ]
 then
     scene='mipnerf360/bonsai'
-    exp_name="exp_${message}"
     voxel_size=0.001
     update_init_factor=16
     low_curv_ups_factor=10
